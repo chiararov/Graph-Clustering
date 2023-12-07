@@ -50,7 +50,7 @@ def modularity(G, clustering):
                 dc[cluster1]+= G.degree(node2)
                 already.add(node2)
     Q=0
-    for i in range(nc):
+    for i in unique_clusters:
         Q+=lc[i]/m-(dc[i]/(2*m))**2
 
     return Q

@@ -19,11 +19,13 @@ def simulated_annealing(graph, initial_partition, temperature, cooling_rate, ite
         new_score = modularity(graph, new_partition)
 
         #pour eviter le depassement numerique, on change la condition classique
-        if new_score > current_score or math.log(random.random() + 1e-10 ) < (new_score - current_score) / temperature:
+        if new_score > current_score:
             current_partition = new_partition
             current_score = new_score
 
-        if new_score > best_score:
+        proba=math.log(random.random() + 1e-10 )
+        comparaison=(new_score - current_score) / temperature
+        if proba < comparaison:
             best_partition = new_partition
             best_score = new_score
 
@@ -61,36 +63,14 @@ def plot(G,partition):
     nx.draw(G)
     plt.show()
 
-
-path="Datasets/CA-HepTh.txt"
-G= nx.read_edgelist(path, comments='#',delimiter='\t')
-
-# Paramètres du Simulated Annealing
-initial_temperature = 2.0
-cooling_rate = 0.01
-iterations = 1000
-k=10
-
-# Initialiser une partition initiale
-initial_partition = {node: random.randint(0,k) for node in G.nodes()}
-
-# # Appliquer le Simulated Annealing
-# final_partition, final_score = simulated_annealing(G, initial_partition, initial_temperature, cooling_rate, iterations)
-
-# # Afficher les résultats
-# print("Final Partition:", final_partition)
-# print("Final Modularity Score:", final_score)
-# print(plot(G,final_partition))
-
-
-def grid_search(graph, initial_partition, temperature_range, cooling_rate_range, iterations, k_range):
+def grid_search(graph, temperature_range, cooling_rate_range, iterations, k_range):
     best_score = -float('inf')
     best_params = {}
     print("Debug in grid_search:")
     print("Temperature range:", temperature_range)
     print("Cooling rate range:", cooling_rate_range)
-    print("Iteration range:", iteration_range)
     print("K range:", k_range)
+
     for temperature, cooling_rate, k in itertools.product(temperature_range, cooling_rate_range, k_range):
         # Mettre à jour la partition initiale avec le nouveau k
         current_partition = {node: random.randint(0, k) for node in graph.nodes()}
@@ -110,19 +90,36 @@ def grid_search(graph, initial_partition, temperature_range, cooling_rate_range,
     
     return best_params, best_score
 
-# Définition des gammes de paramètres
-# temperature_range = [0.5, 1.0, 2.0]
-# cooling_rate_range = [0.01, 0.05, 0.1]
-# iteration_range = [500, 1000, 1500]
-# k_range = [3, 5, 7]
-
-temperature_range = np.arange(1.5, 3.5, 0.5)
-cooling_rate_range = np.arange(0.05, 0.5, 0.05)
-iteration_range = 10000
-k_range = np.arange(3, 8, 1) 
+#Définition du dataset
+path="Datasets/CA-HepTh.txt"
+G= nx.read_edgelist(path, comments='#',delimiter='\t')
 
 # Appliquer la recherche en grille
-best_params, best_score = grid_search(G, initial_partition, temperature_range, cooling_rate_range, iteration_range, k_range)
+iterations = 10000
+temperature_range = np.arange(1.5, 3.5, 0.5)
+cooling_rate_range = temperature_range/(iterations-1)
+k_range = np.arange(3, 8, 1) 
+
+best_params, best_score = grid_search(G, temperature_range, cooling_rate_range, iterations, k_range)
 
 print("Meilleurs paramètres:", best_params)
 print("Meilleur score de modularité:", best_score)
+
+#On obtient les valeurs suivantes (Meilleur score de modularité: 0.69894901144641):
+k=7
+iterations=10000
+temperature=3.0
+cooling_rate=temperature/(iterations-1)
+
+initial_partition = {node: random.randint(0,k) for node in G.nodes()}
+
+# Appliquer le Simulated Annealing
+final_partition, final_score = simulated_annealing(G, initial_partition, temperature, cooling_rate, iterations)
+
+# Afficher les résultats
+print("Final Partition:", final_partition)
+print("Final Modularity Score:", final_score)
+print(plot(G,final_partition))
+
+
+

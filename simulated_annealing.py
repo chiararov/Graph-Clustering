@@ -13,25 +13,30 @@ def simulated_annealing(graph, initial_partition, temperature, cooling_rate, ite
 
     best_partition = current_partition.copy()
     best_score = current_score
+    scores=[]
 
     for _ in range(iterations):
         new_partition = perturb_partition(current_partition)
         new_score = modularity(graph, new_partition)
 
-        #pour eviter le depassement numerique, on change la condition classique
+        
         if new_score > current_score:
             current_partition = new_partition
             current_score = new_score
 
+        #pour eviter le depassement numerique, on change la condition classique
         proba=math.log(random.random() + 1e-10 )
         comparaison=(new_score - current_score) / temperature
+        
         if proba < comparaison:
             best_partition = new_partition
             best_score = new_score
 
         temperature *= 1 - cooling_rate
+        
+        scores.append(best_score)
 
-    return best_partition, best_score
+    return best_partition, best_score,scores
 
 def perturb_partition(partition):
     perturbed_partition = partition.copy()
@@ -47,21 +52,6 @@ def perturb_partition(partition):
     perturbed_partition[node] = new_community
     return perturbed_partition
 
-def plot(G,partition):
-
-    ordered_nodes = sorted(partition.keys(), key=lambda x: partition[x])
-
-    reordered_matrix = nx.to_numpy_array(G, nodelist=ordered_nodes)
-    
-    # Plot adjacency matrix
-    plt.imshow(reordered_matrix, cmap='gray')
-    plt.title("Reordered Adjacency Matrix")
-    plt.show()
-
-    # Draw the graph
-    plt.title('Generated graph')
-    nx.draw(G)
-    plt.show()
 
 def grid_search(graph, temperature_range, cooling_rate_range, iterations, k_range):
     best_score = -float('inf')
@@ -76,7 +66,7 @@ def grid_search(graph, temperature_range, cooling_rate_range, iterations, k_rang
         current_partition = {node: random.randint(0, k) for node in graph.nodes()}
         
         # Appliquer le Simulated Annealing
-        partition, score = simulated_annealing(graph, current_partition, temperature, cooling_rate, iterations)
+        partition, score, _ = simulated_annealing(graph, current_partition, temperature, cooling_rate, iterations)
         
         # Enregistrer les meilleurs paramètres
         if score > best_score:
@@ -90,36 +80,21 @@ def grid_search(graph, temperature_range, cooling_rate_range, iterations, k_rang
     
     return best_params, best_score
 
-#Définition du dataset
-path="Datasets/CA-HepTh.txt"
-G= nx.read_edgelist(path, comments='#',delimiter='\t')
 
-# Appliquer la recherche en grille
-iterations = 10000
-temperature_range = np.arange(1.5, 3.5, 0.5)
-cooling_rate_range = temperature_range/(iterations-1)
-k_range = np.arange(3, 8, 1) 
+def plot_graph(G,partition):
+    colors = [partition[node] for node in G.nodes()]
+    plt.figure(figsize=(10, 8))
+    pos = nx.spring_layout(G)
+    nx.draw(G, pos, node_color=colors, cmap=plt.cm.Paired, with_labels=True)
+    sm = plt.cm.ScalarMappable(cmap=plt.cm.Paired)
+    sm.set_array([])
+    cbar = plt.colorbar(sm, ticks=range(max(partition.values()) + 1))
+    cbar.set_label('Clusters')
+    plt.show()
 
-best_params, best_score = grid_search(G, temperature_range, cooling_rate_range, iterations, k_range)
-
-print("Meilleurs paramètres:", best_params)
-print("Meilleur score de modularité:", best_score)
-
-#On obtient les valeurs suivantes (Meilleur score de modularité: 0.69894901144641):
-k=7
-iterations=10000
-temperature=3.0
-cooling_rate=temperature/(iterations-1)
-
-initial_partition = {node: random.randint(0,k) for node in G.nodes()}
-
-# Appliquer le Simulated Annealing
-final_partition, final_score = simulated_annealing(G, initial_partition, temperature, cooling_rate, iterations)
-
-# Afficher les résultats
-print("Final Partition:", final_partition)
-print("Final Modularity Score:", final_score)
-print(plot(G,final_partition))
-
-
-
+def plot_adj(G,partition):
+    ordered_nodes = sorted(partition.keys(), key=lambda x: partition[x])
+    reordered_matrix = nx.to_numpy_array(G, nodelist=ordered_nodes)    
+    plt.imshow(reordered_matrix, cmap='gray')
+    plt.title("Reordered Adjacency Matrix")
+    plt.show()

@@ -3,9 +3,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import random
 import math
-from Utils import modularity
-import numpy as np
-import scipy.sparse as sp
+from Utils import *
 
 def simulated_annealing(graph, initial_partition, temperature, cooling_rate, iterations):
     current_partition = initial_partition.copy()
@@ -14,27 +12,27 @@ def simulated_annealing(graph, initial_partition, temperature, cooling_rate, ite
     best_partition = current_partition.copy()
     best_score = current_score
     scores=[]
-
+    n=graph.number_of_nodes()
     for _ in range(iterations):
-        new_partition = perturb_partition(current_partition)
-        new_score = modularity(graph, new_partition)
+        for _ in range(n^2):
+            new_partition = perturb_partition(current_partition)
+            new_score = modularity(graph, new_partition)
 
-        
-        if new_score > current_score:
-            current_partition = new_partition
-            current_score = new_score
+            
+            if new_score > current_score:
+                current_partition = new_partition
+                current_score = new_score
 
-        #pour eviter le depassement numerique, on change la condition classique
-        proba=math.log(random.random() + 1e-10 )
-        comparaison=(new_score - current_score) / temperature
-        
-        if proba < comparaison:
-            best_partition = new_partition
-            best_score = new_score
-
+            #pour eviter le depassement numerique, on change la condition classique
+            proba=math.log(random.random() + 1e-10 )
+            comparaison=(new_score - current_score) / temperature
+            
+            if proba < comparaison:
+                best_partition = new_partition
+                best_score = new_score
+            
+            scores.append(best_score)
         temperature *= 1 - cooling_rate
-        
-        scores.append(best_score)
 
     return best_partition, best_score,scores
 
@@ -53,15 +51,14 @@ def perturb_partition(partition):
     return perturbed_partition
 
 
-def grid_search(graph, temperature_range, cooling_rate_range, iterations, k_range):
+def grid_search(graph, temperature_range, cooling_rate_range, iterations, k):
     best_score = -float('inf')
     best_params = {}
-    print("Debug in grid_search:")
     print("Temperature range:", temperature_range)
     print("Cooling rate range:", cooling_rate_range)
-    print("K range:", k_range)
+    print("k:", k)
 
-    for temperature, cooling_rate, k in itertools.product(temperature_range, cooling_rate_range, k_range):
+    for temperature, cooling_rate in itertools.product(temperature_range, cooling_rate_range):
         # Mettre à jour la partition initiale avec le nouveau k
         current_partition = {node: random.randint(0, k) for node in graph.nodes()}
         
@@ -85,7 +82,7 @@ def plot_graph(G,partition):
     colors = [partition[node] for node in G.nodes()]
     plt.figure(figsize=(10, 8))
     pos = nx.spring_layout(G)
-    nx.draw(G, pos, node_color=colors, cmap=plt.cm.Paired, with_labels=True)
+    nx.draw(G, pos, node_color=colors, cmap=plt.cm.Paired, with_labels=False)
     sm = plt.cm.ScalarMappable(cmap=plt.cm.Paired)
     sm.set_array([])
     cbar = plt.colorbar(sm, ticks=range(max(partition.values()) + 1))

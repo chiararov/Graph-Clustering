@@ -5,6 +5,33 @@ import random
 import math
 from Utils import *
 
+def modularity(G, clustering):
+    m=G.number_of_edges()
+    unique_clusters=set(clustering.values())
+    nc=len(unique_clusters) #number of clusters
+    lc = {cluster: 0 for cluster in unique_clusters} #number of edges in c
+    dc = {cluster: 0 for cluster in unique_clusters} #sum of degrees in c
+    already=set() #list of the nodes already treated
+    for edge in G.edges():
+        node1,node2=edge
+        cluster1=clustering.get(node1)
+        cluster2=clustering.get(node2)
+
+        if cluster1==cluster2:
+            lc[cluster1]+=1
+            if not node1 in already:
+                dc[cluster1]+= G.degree(node1)
+                already.add(node1)
+            if not node2 in already:
+                dc[cluster1]+= G.degree(node2)
+                already.add(node2)
+    Q=0
+    for i in unique_clusters:
+        Q+=lc[i]/m-(dc[i]/(2*m))**2
+
+    return Q
+
+
 def simulated_annealing(graph, initial_partition, temperature, cooling_rate, iterations):
     current_partition = initial_partition.copy()
     current_score = modularity(graph, current_partition)

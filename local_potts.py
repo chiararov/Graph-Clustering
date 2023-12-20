@@ -1,6 +1,6 @@
 import networkx as nx
 import numpy as np
-
+import random
 def initialize_system(G, q=None):
     """
     Initialize a system for community detection.
@@ -30,7 +30,7 @@ def initialize_system(G, q=None):
 
     return A, J, communities
 
-def optimize_node_memberships(G, A, J, communities, gamma=1):
+def optimize_node_memberships(G, A, J, communities, nodes, gamma=1):
     '''
     Optimize node memberships in a network based on energy minimization.
 
@@ -48,8 +48,7 @@ def optimize_node_memberships(G, A, J, communities, gamma=1):
     unique_communities = np.unique(communities)
     # Calculate and store the energy of each community
     energies = {community: community_energy(A, J, communities, community, gamma) for community in unique_communities}
-
-    for node in range(len(communities)):
+    for node in nodes:
         old_community = communities[node]
         neighbors = list(G.neighbors(node))
         # Get communities of the neighbors
@@ -138,10 +137,11 @@ def iterate_until_convergence(G, A, J, communities, gamma=1):
     - numpy.ndarray: Updated array assigning nodes to communities.
     """
     previous_communities = np.copy(communities)
-
+    nodes = list(np.arange(len(communities)))
+    random.shuffle(nodes)
     while True:
         # Optimize node memberships
-        communities = optimize_node_memberships(G, A, J, communities, gamma)
+        communities = optimize_node_memberships(G, A, J, communities, nodes, gamma)
 
         # Check for convergence
         if np.array_equal(communities, previous_communities):
@@ -191,7 +191,7 @@ def test_for_local_energy_minimum(G, A, J, communities, gamma=1):
                 merged = True
                 break
     
-    return merged
+    return merged, communities
 
 def repeated_trials(G, t, gamma=1):
     """
@@ -211,17 +211,22 @@ def repeated_trials(G, t, gamma=1):
     best_energy = float('inf')
     best_communities = None
 
-    for _ in range(t):
+    for j in range(t):
+        print("TRIAL", j, ":")
+        print("Initialization...")
         A, J, communities = initialize_system(G)
 
-        # Iterate until convergence
+        print("Iterate until convergence", 0, "...")
         communities = iterate_until_convergence(G, A, J, communities, gamma)
         i = 0
-
-        # Test for a local energy minimum and refine if necessary
-        while test_for_local_energy_minimum(G, A, J, communities, gamma):
+        print("Test for a local energy minimum...")
+        merged, communities = test_for_local_energy_minimum(G, A, J, communities, gamma)
+        while merged:
             i += 1
+            print("Iterate until convergence", i, "...")
             communities = iterate_until_convergence(G, A, J, communities, gamma)
+            print("Test for a local energy minimum...")
+            merged, communities = test_for_local_energy_minimum(G, A, J, communities, gamma)
 
         # Calculate the energy of the final solution
         energy = calculate_total_energy(A, J, communities, gamma)

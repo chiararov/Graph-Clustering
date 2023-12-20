@@ -4,6 +4,7 @@ import networkx as nx
 import random
 import math
 from Utils import *
+from tqdm import tqdm
 
 def modularity(G, clustering):
     m=G.number_of_edges()
@@ -40,34 +41,35 @@ def simulated_annealing(graph, initial_partition, temperature, cooling_rate, ite
     best_score = current_score
     scores=[]
     n=graph.number_of_nodes()
-    for _ in range(iterations):
-        for _ in range(n^2):
+    for _ in range(n*iterations):
+        for _ in range(n//5):
             new_partition = perturb_partition(current_partition)
             new_score = modularity(graph, new_partition)
 
-            
             if new_score > current_score:
                 current_partition = new_partition
                 current_score = new_score
 
             #pour eviter le depassement numerique, on change la condition classique
             proba=math.log(random.random() + 1e-10 )
-            comparaison=(new_score - current_score) / temperature
+            comparison=(new_score - current_score) / temperature
             
-            if proba < comparaison:
-                best_partition = new_partition
-                best_score = new_score
+            if proba < comparison:
+                # best_partition = new_partition
+                # best_score = new_score
+                current_partition = new_partition
+                current_score = new_score
             
-            scores.append(best_score)
+            # scores.append(best_score)
+            scores.append(current_score)
         temperature *= 1 - cooling_rate
 
-    return best_partition, best_score,scores
+    # return best_partition, best_score,scores
+    return current_partition, current_score,scores
 
 def perturb_partition(partition):
     perturbed_partition = partition.copy()
     node = random.choice(list(partition.keys()))
-    
-    # Vérifier si l'ensemble de communautés est vide
     available_communities = set(partition.values()) - {partition[node]}
     if not available_communities:
         new_community = random.choice(list(set(partition.values())))
@@ -81,29 +83,20 @@ def perturb_partition(partition):
 def grid_search(graph, temperature_range, cooling_rate_range, iterations, k):
     best_score = -float('inf')
     best_params = {}
-    print("Temperature range:", temperature_range)
-    print("Cooling rate range:", cooling_rate_range)
-    print("k:", k)
 
-    for temperature, cooling_rate in itertools.product(temperature_range, cooling_rate_range):
-        # Mettre à jour la partition initiale avec le nouveau k
-        current_partition = {node: random.randint(0, k) for node in graph.nodes()}
-        
-        # Appliquer le Simulated Annealing
-        partition, score, _ = simulated_annealing(graph, current_partition, temperature, cooling_rate, iterations)
-        
-        # Enregistrer les meilleurs paramètres
-        if score > best_score:
-            best_score = score
-            best_params = {
-                'temperature': temperature,
-                'cooling_rate': cooling_rate,
-                'iterations': iterations,
-                'k': k
-            }
+    # for temperature, cooling_rate in itertools.product(temperature_range, cooling_rate_range):
+    for temperature in temperature_range:
+        for cooling_rate in cooling_rate_range:
+            current_partition = {node: random.randint(1, k) for node in graph.nodes()}
+            partition, score, _ = simulated_annealing(graph, current_partition, temperature, cooling_rate, iterations)
+            if score > best_score:
+                best_score = score
+                best_params = {
+                    'temperature': temperature,
+                    'cooling_rate': cooling_rate,
+                }
     
     return best_params, best_score
-
 
 def plot_graph(G,partition):
     colors = [partition[node] for node in G.nodes()]
@@ -122,3 +115,21 @@ def plot_adj(G,partition):
     plt.imshow(reordered_matrix, cmap='gray')
     plt.title("Reordered Adjacency Matrix")
     plt.show()
+
+# G = generate_known_cluster(100,5,0.7,0.1)
+# k=6
+# temperature=5
+# cooling_rate=0.07
+# iterations=5
+# initial_partition = {node: random.randint(0,k) for node in G.nodes()}
+
+# final_partition, final_score, scores = simulated_annealing(G, initial_partition, temperature, cooling_rate, iterations)
+
+# # print("Final Partition:", final_partition)
+# print("Final Modularity Score:", final_score)
+
+# iterations = 5
+# temperature_range = np.arange(3, 7, 1)
+# cooling_rate_range = np.arange(0.01,0.2,0.02)
+# k = 5
+# best_params, best_score = grid_search(G, temperature_range, cooling_rate_range, iterations, k)

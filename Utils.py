@@ -47,3 +47,28 @@ def plot_graph_cluster(G,title):
     nx.draw_networkx_labels(G, state_pos, labels=node_states, font_color='red')
     plt.title(title)
     plt.show()
+
+def quality(true, pred):
+    TP = 0
+    FN = 0
+    FP=0
+    TN=0 
+    for i in range(len(true)):
+        for j in range(len(pred)):
+            if true[i] ==true[j] and pred[i] ==pred[j]:
+                TP+=1
+            elif true[i] == true[j] and pred[i] != pred[j]:
+                FN+=1
+            elif true[i] != true[j] and pred[i] == pred[j]:
+                FP+=1
+            if true[i] != true[j] and pred[i] != pred[j]:
+                TN+=1
+    if TP+FN==0:
+        sens=0
+    else:
+        sens=TP/(TP+FN)
+    if TN+FP==0:
+        spe=0
+    else:
+        spe=TN/(TN+FP)
+    return sens,spe

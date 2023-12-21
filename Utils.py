@@ -6,6 +6,20 @@ import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 
+def random_initialization(graph,q):
+    '''
+    Function takes a graph and randomly initializes a partition
+    Inputs:
+    - graph: Networkx graph
+    - q: the number of clusters we want to partition against
+    Outputs: randomly partitioned network
+    '''
+    G = graph.copy()
+    for n in G.nodes:
+        spin = np.random.randint(q)
+        G.nodes[n]["spin"] = spin
+    return G
+
 def generate_known_cluster(N_nodes, N_clusters, k_in, k_out):
     
     network = nx.Graph()

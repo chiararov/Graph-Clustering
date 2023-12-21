@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 import random
 import time
+from tqdm import tqdm
 
 def initialize_system(G, q=None):
     """
@@ -271,3 +272,12 @@ def calculate_total_energy(A, J, communities, gamma=1):
     existing_communities, community_counts = np.unique(communities, return_counts=True)
     total_energy = np.sum([community_energy(A, J, communities, c, gamma) * (count - 1) for c, count in zip(existing_communities, community_counts)])
     return total_energy
+
+def evaluate_local_potts(G, t, gammas, verbose=False):
+    energies = []
+    times = []
+    for gamma in tqdm(gammas):
+        _, _, gamma_energies, gamma_time = repeated_trials(G, t, gamma=gamma, verbose=verbose)
+        energies += [gamma_energies ]
+        times += [gamma_time]
+    return energies, times

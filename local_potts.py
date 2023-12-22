@@ -142,7 +142,7 @@ def iterate_until_convergence(G, A, J, communities, gamma=1):
     previous_communities = np.copy(communities)
     nodes = list(np.arange(len(communities)))
     random.shuffle(nodes)
-    energies = []s
+    energies = []
     times = []
     while True:
         # Optimize node memberships

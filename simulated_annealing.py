@@ -7,6 +7,10 @@ from Utils import *
 from tqdm import tqdm
 
 def modularity(G, clustering):
+    '''
+    Calculates the modularity of a graph G based on the clustering, handled as a dictionary.
+    Returns the modularity value
+    '''
     m=G.number_of_edges()
     unique_clusters=set(clustering.values())
     nc=len(unique_clusters) #number of clusters
@@ -34,11 +38,16 @@ def modularity(G, clustering):
 
 
 def simulated_annealing(graph, k, temperature, cooling_rate, iterations):
+    '''
+    Algorithm that maximimizes the modularity. k is the number of clusters.
+    It returns:
+    - The final partition
+    - The final modularity score
+    - The evolution of the modularity along the iterations
+    '''
     current_partition = {node: random.randint(1,k) for node in graph.nodes()}
     current_score = modularity(graph, current_partition)
 
-    best_partition = current_partition.copy()
-    best_score = current_score
     scores=[]
     n=graph.number_of_nodes()
     for _ in range(n*iterations):
@@ -50,24 +59,20 @@ def simulated_annealing(graph, k, temperature, cooling_rate, iterations):
                 current_partition = new_partition
                 current_score = new_score
 
-            #pour eviter le depassement numerique, on change la condition classique
             proba=math.log(random.random() + 1e-10 )
             comparison=(new_score - current_score) / temperature
             
             if proba < comparison:
-                # best_partition = new_partition
-                # best_score = new_score
                 current_partition = new_partition
                 current_score = new_score
             
-            # scores.append(best_score)
             scores.append(current_score)
         temperature *= 1 - cooling_rate
 
-    # return best_partition, best_score,scores
     return current_partition, current_score,scores
 
 def perturb_partition(partition):
+    '''Changes the cluster of a node'''
     perturbed_partition = partition.copy()
     node = random.choice(list(partition.keys()))
     available_communities = set(partition.values()) - {partition[node]}
@@ -81,6 +86,10 @@ def perturb_partition(partition):
 
 
 def grid_search(graph, temperature_range, cooling_rate_range, iterations, k):
+    '''
+    Realises finds the optimised set of parameters that maximises the modularity.
+    Returns a set of parameters
+    '''
     best_score = -float('inf')
     best_params = {}
 
@@ -97,6 +106,10 @@ def grid_search(graph, temperature_range, cooling_rate_range, iterations, k):
     return best_params, best_score
 
 def find_para(G,k,temperature_range,cooling_rate_range,iterations,threshold):
+    '''
+    Because of the modularity's behaviour, we introduce an other type of grid search:
+    We calculate the optimised set of parameters and return the set, the clustering, the final modularity score and a track of the modularity values during the iterations.
+    '''
     Good=[]
     for temperature in temperature_range:
         for cooling_rate in cooling_rate_range:
@@ -105,14 +118,3 @@ def find_para(G,k,temperature_range,cooling_rate_range,iterations,threshold):
             if final_score>threshold:
                 Good.append((temperature,cooling_rate,final_partition, final_score, scores))
     return Good
-
-# k=5
-# G = generate_known_cluster(50,k,0.7,0.1)
-# iterations=5
-# temperature_range = np.arange(3, 7, 1)
-# cooling_rate_range = np.arange(0.01,0.1,0.01)
-# optimal_parameters=find_para(G,k,temperature_range,cooling_rate_range,iterations,0.6)
-# print(len(optimal_parameters))
-# # elt=0
-# temperature,cooling_rate,final_partition,final_score,scores=optimal_parameters[elt]
-# print("Final Modularity Score:", final_score)

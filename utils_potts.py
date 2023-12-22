@@ -1,14 +1,5 @@
 from Utils import *
 
-#### Plot graph with spin labels 
-def plot_graph(G):
-  plt.figure(figsize=(10,6))
-  pos = nx.spring_layout(G)
-  node_states = nx.get_node_attributes(G, 'spin')
-  state_pos = {n: (x, y) for n, (x,y) in pos.items()}
-  nx.draw(G,pos)
-  nx.draw_networkx_labels(G, state_pos, labels=node_states, font_color='red')
-  plt.show()
 
 
 #### Very simple benchmark 

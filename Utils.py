@@ -52,13 +52,21 @@ def generate_known_cluster(N_nodes, N_clusters, k_in, k_out):
         
     return network
 
-def plot_graph_cluster(G,title):
-    plt.figure(figsize=(10,6))
+# def plot_graph_cluster(G,title):
+#     plt.figure(figsize=(10,6))
+#     pos = nx.spring_layout(G)
+#     node_states = nx.get_node_attributes(G, 'spin')
+#     state_pos = {n: (x, y) for n, (x,y) in pos.items()}
+#     nx.draw(G,pos)
+#     nx.draw_networkx_labels(G, state_pos, labels=node_states, font_color='red')
+#     plt.title(title)
+#     plt.show()
+
+def plot_graph_cluster(G, title):
+    plt.figure(figsize=(10, 6))
     pos = nx.spring_layout(G)
     node_states = nx.get_node_attributes(G, 'spin')
-    state_pos = {n: (x, y) for n, (x,y) in pos.items()}
-    nx.draw(G,pos)
-    nx.draw_networkx_labels(G, state_pos, labels=node_states, font_color='red')
+    nx.draw(G, pos, node_color=list(node_states.values()), cmap=plt.cm.Paired, with_labels=False)
     plt.title(title)
     plt.show()
 
@@ -88,7 +96,7 @@ def quality(true, pred):
     return sens,spe
 
 
-def plot_graph(G,partition):
+def plot_graph_with_partition(G,partition):
     colors = [partition[node] for node in G.nodes()]
     plt.figure(figsize=(10, 8))
     pos = nx.spring_layout(G)
@@ -99,9 +107,20 @@ def plot_graph(G,partition):
     cbar.set_label('Clusters')
     plt.show()
 
+
 def plot_adj(G,partition):
     ordered_nodes = sorted(partition.keys(), key=lambda x: partition[x])
     reordered_matrix = nx.to_numpy_array(G, nodelist=ordered_nodes)    
     plt.imshow(reordered_matrix, cmap='gray')
     plt.title("Reordered Adjacency Matrix")
     plt.show()
+
+#### Plot graph with spin labels
+def plot_graph(G):
+  plt.figure(figsize=(10,6))
+  pos = nx.spring_layout(G)
+  node_states = nx.get_node_attributes(G, 'spin')
+  state_pos = {n: (x, y) for n, (x,y) in pos.items()}
+  nx.draw(G,pos)
+  nx.draw_networkx_labels(G, state_pos, labels=node_states, font_color='red')
+  plt.show()

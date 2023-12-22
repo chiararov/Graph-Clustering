@@ -333,13 +333,15 @@ def generate_benchmark(N, hki, gamma, beta, mu, hki_community = None, save_path=
     Returns:
     - networkx.Graph: A graph generated based on the specified parameters.
     """
-    if not hki_community:
-        hki_community = N/2
     # Step 1: Generate node degrees from a power-law distribution
     degrees = np.random.power(gamma, N)
-    degrees = np.round(degrees * (hki - 1) + 1).astype(int)
+    mean = np.mean(degrees)
+    rounding = hki/mean
+    degrees = np.round(degrees * (rounding+1)).astype(int)
     k_max = np.max(degrees)
     k_min = np.min(degrees)
+    if not hki_community:
+        hki_community = random.randint(k_max, int(N/2))
     # Step 2: Create a configuration model to connect nodes
     try:
         G = nx.configuration_model(degrees)
@@ -355,7 +357,7 @@ def generate_benchmark(N, hki, gamma, beta, mu, hki_community = None, save_path=
     s_min, s_max = 0, 0
     while s_min <= k_min or s_max <= k_max:
         community_sizes = np.random.power(beta, N)
-        community_sizes = np.round(community_sizes * (hki_community - 1) + 1).astype(int)
+        community_sizes = np.round(community_sizes * (hki_community + 1)).astype(int)
         # Ensure the sum of community sizes equals the total number of nodes
         community_sizes = community_sizes[community_sizes.cumsum() <= N].tolist()
         community_sizes += [N - np.sum(community_sizes)]

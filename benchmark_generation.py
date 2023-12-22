@@ -291,23 +291,32 @@ def assign_nodes_to_communities(G, community_sizes):
     """
     nodes = list(G.nodes())
     N_communities = len(community_sizes)
+    current_community_sizes = [0]*N_communities
+    for node in nodes:
+        G.nodes[node]['community'] = -1
     while nodes:
         np.random.shuffle(nodes)
         to_remove = []
+        to_add = []
         for i, node in enumerate(nodes):
             community = np.random.randint(N_communities)
             # If it has only one neighbor, assign the node to the same community as its neighbor
             if G.degree[node] == 1:
                 neighbor = list(G[node].copy().keys())[0]
-                try:
+                if G.nodes[neighbor]['community'] != -1:
                     G.nodes[node]['community'] = G.nodes[neighbor]['community']
                     to_remove += [node]
-                except:
-                    pass
-            if community_sizes[community] > G.degree[node]:
+            elif community_sizes[community] > len([neighbor for neighbor in G.neighbors(node) if G.nodes[neighbor]['community'] == community]):
                 G.nodes[node]['community'] = community
                 to_remove += [node]
+                current_community_sizes[community] += 1
+                if current_community_sizes[community] > community_sizes[community]:
+                    to_add += [random.choice([node_in_community for node_in_community, data in G.nodes(data=True) if data.get('community') == community])]
+                    G.nodes[to_add[-1]]['community'] = -1
+
+
         nodes = [node for node in nodes if node not in to_remove]
+        nodes += to_add
 
 def generate_benchmark(N, hki, gamma, beta, mu, hki_community = None, save_path=None):
     """
@@ -352,11 +361,15 @@ def generate_benchmark(N, hki, gamma, beta, mu, hki_community = None, save_path=
         community_sizes += [N - np.sum(community_sizes)]
         s_min = np.min(community_sizes)
         s_max = np.max(community_sizes)
+
     # Step 4: Assign nodes to communities
     assign_nodes_to_communities(G, community_sizes)
+
     compute_mu(G)
+
     # Step 5: Rewire to enforce the mixing parameter mu
     rewire_to_enforce_mu(G, mu, len(community_sizes))
+
     # Store the generated graph
     if save_path:
         nx.write_gml(G, save_path+".gml")

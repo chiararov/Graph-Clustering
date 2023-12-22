@@ -1,6 +1,9 @@
 import networkx as nx
 import numpy as np
 import random
+import time
+from tqdm import tqdm
+
 def initialize_system(G, q=None):
     """
     Initialize a system for community detection.
@@ -139,16 +142,20 @@ def iterate_until_convergence(G, A, J, communities, gamma=1):
     previous_communities = np.copy(communities)
     nodes = list(np.arange(len(communities)))
     random.shuffle(nodes)
+    energies = []
+    times = []
     while True:
         # Optimize node memberships
+        start_time = time.time()
         communities = optimize_node_memberships(G, A, J, communities, nodes, gamma)
-
+        times += [time.time() - start_time]
+        energies += [calculate_total_energy(A, J, communities, gamma)]
         # Check for convergence
         if np.array_equal(communities, previous_communities):
             break
         previous_communities = np.copy(communities)
 
-    return communities
+    return communities, energies, times
 
 def test_for_local_energy_minimum(G, A, J, communities, gamma=1):
     """
@@ -193,7 +200,7 @@ def test_for_local_energy_minimum(G, A, J, communities, gamma=1):
     
     return merged, communities
 
-def repeated_trials(G, t, gamma=1):
+def repeated_trials(G, t, gamma=1, verbose=False):
     """
     Perform repeated trials to find the best community structure.
 
@@ -207,25 +214,33 @@ def repeated_trials(G, t, gamma=1):
 
     This function repeats steps to find the best community structure over t independent trials.
     """
-
     best_energy = float('inf')
     best_communities = None
-
+    best_energies = None
+    best_time = None
     for j in range(t):
-        print("TRIAL", j, ":")
-        print("Initialization...")
+        if verbose:
+            print("TRIAL", j, ":")
+            print("Initialization...")
         A, J, communities = initialize_system(G)
-
-        print("Iterate until convergence", 0, "...")
-        communities = iterate_until_convergence(G, A, J, communities, gamma)
+        if verbose:
+            print("Iterate until convergence", 0, "...")
+        communities, energy, time_convergence = iterate_until_convergence(G, A, J, communities, gamma)
+        times = time_convergence
+        e = energy
         i = 0
-        print("Test for a local energy minimum...")
+        if verbose:
+            print("Test for a local energy minimum...")
         merged, communities = test_for_local_energy_minimum(G, A, J, communities, gamma)
         while merged:
             i += 1
-            print("Iterate until convergence", i, "...")
-            communities = iterate_until_convergence(G, A, J, communities, gamma)
-            print("Test for a local energy minimum...")
+            if verbose:
+                print("Iterate until convergence", i, "...")
+            communities, energy, time_convergence = iterate_until_convergence(G, A, J, communities, gamma)
+            times += time_convergence
+            e += energy
+            if verbose:
+                print("Test for a local energy minimum...")
             merged, communities = test_for_local_energy_minimum(G, A, J, communities, gamma)
 
         # Calculate the energy of the final solution
@@ -234,9 +249,10 @@ def repeated_trials(G, t, gamma=1):
         # Update the best solution if the current energy is lower
         if energy < best_energy:
             best_energy = energy
+            best_energies = e
             best_communities = np.copy(communities)
-
-    return best_communities
+            best_time = times
+    return best_communities, best_energy, best_energies, best_time
 
 def calculate_total_energy(A, J, communities, gamma=1):
     """
@@ -256,3 +272,12 @@ def calculate_total_energy(A, J, communities, gamma=1):
     existing_communities, community_counts = np.unique(communities, return_counts=True)
     total_energy = np.sum([community_energy(A, J, communities, c, gamma) * (count - 1) for c, count in zip(existing_communities, community_counts)])
     return total_energy
+
+def evaluate_local_potts(G, t, gammas, verbose=False):
+    energies = []
+    times = []
+    for gamma in tqdm(gammas):
+        _, _, gamma_energies, gamma_time = repeated_trials(G, t, gamma=gamma, verbose=verbose)
+        energies += [gamma_energies ]
+        times += [gamma_time]
+    return energies, times

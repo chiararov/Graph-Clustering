@@ -86,3 +86,22 @@ def quality(true, pred):
     else:
         spe=TN/(TN+FP)
     return sens,spe
+
+
+def plot_graph(G,partition):
+    colors = [partition[node] for node in G.nodes()]
+    plt.figure(figsize=(10, 8))
+    pos = nx.spring_layout(G)
+    nx.draw(G, pos, node_color=colors, cmap=plt.cm.Paired, with_labels=False)
+    sm = plt.cm.ScalarMappable(cmap=plt.cm.Paired)
+    sm.set_array([])
+    cbar = plt.colorbar(sm, ticks=range(max(partition.values()) + 1))
+    cbar.set_label('Clusters')
+    plt.show()
+
+def plot_adj(G,partition):
+    ordered_nodes = sorted(partition.keys(), key=lambda x: partition[x])
+    reordered_matrix = nx.to_numpy_array(G, nodelist=ordered_nodes)    
+    plt.imshow(reordered_matrix, cmap='gray')
+    plt.title("Reordered Adjacency Matrix")
+    plt.show()

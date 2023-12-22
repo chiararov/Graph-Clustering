@@ -1,3 +1,5 @@
+from Utils import *
+
 #### Plot graph with spin labels 
 def plot_graph(G):
   plt.figure(figsize=(10,6))
@@ -49,6 +51,11 @@ def generate_known_cluster(N_nodes, N_clusters, k_in, k_out):
 
 ##### Compute delta function 
 def delta(i,j):
+  '''
+  Function corresponding to the discrete Dirac function
+  inputs: i,j
+  returns: 1 if i==j and 0 otherwise
+  '''
   if i==j: 
       return 1
   else: 
@@ -79,7 +86,7 @@ def calc_energy(graph, J,gamma,q):
 #### Coappearance matrix 
 
 def coappearance(G,co_matrix):
-    N_nodes = len(init_G.nodes)
+    N_nodes = len(G.nodes)
     for i in range(N_nodes):
         for j in range(N_nodes):
             if G.nodes[i]["spin"] == G.nodes[j]["spin"]:
@@ -107,7 +114,7 @@ def sensitivity(G_ref, G_clustered):
 
 #### Specificity 
 
-def specifity(G_ref, G_clustered):
+def specificity(G_ref, G_clustered):
     specificity = 0
     TN = 0
     FP = 0 
@@ -130,7 +137,7 @@ def specifity(G_ref, G_clustered):
 
 def metropolis(graph,J,gamma,beta,q):
     G = graph.copy()
-    N_nodes = len(init_G.nodes)
+    N_nodes = len(G.nodes)
     #Perform N_nodes**2 flips
     for node in range(N_nodes**2):
         
